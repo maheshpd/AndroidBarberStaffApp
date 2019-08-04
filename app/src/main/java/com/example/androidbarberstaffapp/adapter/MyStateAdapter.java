@@ -13,7 +13,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.androidbarberstaffapp.Common.Common;
-import com.example.androidbarberstaffapp.Interface.IRecyclerItemSelectedListener;
+import com.example.androidbarberstaffapp.Interface.IRecycleItemSelectedListener;
 import com.example.androidbarberstaffapp.R;
 import com.example.androidbarberstaffapp.activity.SalonListActivity;
 import com.example.androidbarberstaffapp.model.City;
@@ -50,7 +50,7 @@ public class MyStateAdapter extends RecyclerView.Adapter<MyStateAdapter.MyViewHo
         setAnimation(holder.itemView, position);
 
 
-        holder.setiRecyclerItemSelectedListener(new IRecyclerItemSelectedListener() {
+        holder.setiRecycleItemSelectedListener(new IRecycleItemSelectedListener() {
             @Override
             public void onItemSelected(View view, int position) {
                 Common.state_name = cityList.get(position).getName();
@@ -77,10 +77,10 @@ public class MyStateAdapter extends RecyclerView.Adapter<MyStateAdapter.MyViewHo
         @BindView(R.id.txt_state_name)
         TextView txt_state_name;
 
-        IRecyclerItemSelectedListener iRecyclerItemSelectedListener;
+        IRecycleItemSelectedListener iRecycleItemSelectedListener;
 
-        public void setiRecyclerItemSelectedListener(IRecyclerItemSelectedListener iRecyclerItemSelectedListener) {
-            this.iRecyclerItemSelectedListener = iRecyclerItemSelectedListener;
+        public void setiRecycleItemSelectedListener(IRecycleItemSelectedListener iRecycleItemSelectedListener) {
+            this.iRecycleItemSelectedListener = iRecycleItemSelectedListener;
         }
 
         public MyViewHolder(@NonNull View itemView) {
@@ -92,7 +92,7 @@ public class MyStateAdapter extends RecyclerView.Adapter<MyStateAdapter.MyViewHo
 
         @Override
         public void onClick(View view) {
-            iRecyclerItemSelectedListener.onItemSelected(view, getAdapterPosition());
+            iRecycleItemSelectedListener.onItemSelected(view, getAdapterPosition());
         }
     }
 }

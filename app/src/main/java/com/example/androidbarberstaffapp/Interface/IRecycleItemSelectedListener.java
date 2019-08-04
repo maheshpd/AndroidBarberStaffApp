@@ -2,6 +2,6 @@ package com.example.androidbarberstaffapp.Interface;
 
 import android.view.View;
 
-public interface IRecyclerItemSelectedListener {
+public interface IRecycleItemSelectedListener {
     void onItemSelected(View view,int position);
 }

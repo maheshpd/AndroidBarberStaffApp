@@ -12,19 +12,22 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.androidbarberstaffapp.Common.Common;
 import com.example.androidbarberstaffapp.Common.CustomeLoginDialog;
 import com.example.androidbarberstaffapp.Interface.IDialogClickListener;
-import com.example.androidbarberstaffapp.Interface.IRecyclerItemSelectedListener;
+import com.example.androidbarberstaffapp.Interface.IGetBarberListener;
+import com.example.androidbarberstaffapp.Interface.IRecycleItemSelectedListener;
+import com.example.androidbarberstaffapp.Interface.IUserLoginRememberListener;
 import com.example.androidbarberstaffapp.R;
 import com.example.androidbarberstaffapp.activity.StaffHomeActivity;
+import com.example.androidbarberstaffapp.model.Barber;
 import com.example.androidbarberstaffapp.model.Salon;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
 
@@ -38,13 +41,15 @@ public class MySalonAdapter extends RecyclerView.Adapter<MySalonAdapter.MyViewHo
     Context context;
     List<Salon> salonList;
     List<CardView> itemViewList;
-    LocalBroadcastManager localBroadcastManager;
+    IUserLoginRememberListener iUserLoginRememberListener;
+    IGetBarberListener iGetBarberListener;
 
-    public MySalonAdapter(Context context, List<Salon> salonList) {
+    public MySalonAdapter(Context context, List<Salon> salonList, IUserLoginRememberListener iUserLoginRememberListener, IGetBarberListener iGetBarberListener) {
         this.context = context;
         this.salonList = salonList;
         this.itemViewList = new ArrayList<>();
-        this.localBroadcastManager = LocalBroadcastManager.getInstance(context);
+        this.iGetBarberListener = iGetBarberListener;
+        this.iUserLoginRememberListener = iUserLoginRememberListener;
     }
 
     @NonNull
@@ -63,10 +68,10 @@ public class MySalonAdapter extends RecyclerView.Adapter<MySalonAdapter.MyViewHo
             itemViewList.add(holder.card_salon);
         }
 
-        holder.setiRecycleItemSelectedListener(new IRecyclerItemSelectedListener() {
+        holder.setiRecycleItemSelectedListener(new IRecycleItemSelectedListener() {
             @Override
             public void onItemSelected(View view, int position) {
-                Common.selectedSalon = salonList.get(position);
+                Common.selected_salon = salonList.get(position);
                 showLoginDialog();
             }
         });
@@ -97,8 +102,8 @@ public class MySalonAdapter extends RecyclerView.Adapter<MySalonAdapter.MyViewHo
                 .collection("AllSalon")
                 .document(Common.state_name)
                 .collection("Branch")
-                .document(Common.selectedSalon.getSalonId())
-                .collection("Barber")
+                .document(Common.selected_salon.getSalonId())
+                .collection("Barbers")
                 .whereEqualTo("username", username)
                 .whereEqualTo("password", password)
                 .limit(1)
@@ -117,6 +122,20 @@ public class MySalonAdapter extends RecyclerView.Adapter<MySalonAdapter.MyViewHo
                             if (task.getResult().size() > 0) {
                                 dialogInterface.dismiss();
                                 loading.dismiss();
+
+
+                                iUserLoginRememberListener.onUserLoginSuccess(username);
+
+                                //Create Barber
+                                Barber barber = new Barber();
+                                for (DocumentSnapshot barberSnapShot : task.getResult()) {
+                                    barber = barberSnapShot.toObject(Barber.class);
+                                    barber.setBarberId(barberSnapShot.getId());
+                                }
+
+                                iGetBarberListener.onGetBarberSuccess(barber) ;
+
+
 
                                 //We will navigate Staff Home and clear all previous activity
                                 Intent staffHome = new Intent(context, StaffHomeActivity.class);
@@ -143,9 +162,9 @@ public class MySalonAdapter extends RecyclerView.Adapter<MySalonAdapter.MyViewHo
         TextView txt_salon_name, txt_salon_address;
         CardView card_salon;
 
-        IRecyclerItemSelectedListener iRecycleItemSelectedListener;
+        IRecycleItemSelectedListener iRecycleItemSelectedListener;
 
-        public void setiRecycleItemSelectedListener(IRecyclerItemSelectedListener iRecycleItemSelectedListener) {
+        public void setiRecycleItemSelectedListener(IRecycleItemSelectedListener iRecycleItemSelectedListener) {
             this.iRecycleItemSelectedListener = iRecycleItemSelectedListener;
         }
 
