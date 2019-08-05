@@ -11,11 +11,15 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.androidbarberstaffapp.Common.Common;
 import com.example.androidbarberstaffapp.Common.SpacesItemDecoration;
+import com.example.androidbarberstaffapp.Interface.INotificationCountListener;
 import com.example.androidbarberstaffapp.Interface.ITimeSlotLoadListener;
 import com.example.androidbarberstaffapp.R;
 import com.example.androidbarberstaffapp.adapter.MyTimeSlotAdapter;
@@ -27,13 +31,18 @@ import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+
+import javax.annotation.Nullable;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -45,7 +54,10 @@ import io.paperdb.Paper;
 
 import static com.example.androidbarberstaffapp.Common.Common.simpleDateFormat;
 
-public class StaffHomeActivity extends AppCompatActivity implements ITimeSlotLoadListener {
+public class StaffHomeActivity extends AppCompatActivity implements ITimeSlotLoadListener, INotificationCountListener {
+
+    TextView txt_barber_name;
+
 
     @BindView(R.id.activity_main)
     DrawerLayout drawerLayout;
@@ -66,7 +78,18 @@ public class StaffHomeActivity extends AppCompatActivity implements ITimeSlotLoa
     @BindView(R.id.horizontalCalendarView)
     HorizontalCalendarView calendarView;
 
+    TextView txt_notification_badge;
 
+    CollectionReference notificationCollection;
+    CollectionReference currentBookDateCollection;
+
+    EventListener<QuerySnapshot> notificationEvent;
+    EventListener<QuerySnapshot> bookingEvent;
+
+    ListenerRegistration notificationListener;
+    ListenerRegistration bookingRealtimeListenr;
+
+    INotificationCountListener iNotificationCountListener;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -94,6 +117,10 @@ public class StaffHomeActivity extends AppCompatActivity implements ITimeSlotLoa
                 return true;
             }
         });
+
+        View headerView = navigationView.getHeaderView(0);
+        txt_barber_name = headerView.findViewById(R.id.txt_barber_name);
+        txt_barber_name.setText(Common.currentBarber.getName()) ;
 
         //copy from Barber Booking App (Client App)
         alertDialog = new SpotsDialog.Builder().setCancelable(false).setContext(this)
@@ -150,7 +177,7 @@ public class StaffHomeActivity extends AppCompatActivity implements ITimeSlotLoa
                 .setPositiveButton("YES", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        Intent mainActivity = new Intent(StaffHomeActivity.this,MainActivity.class);
+                        Intent mainActivity = new Intent(StaffHomeActivity.this, MainActivity.class);
                         mainActivity.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
                         mainActivity.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                         startActivity(mainActivity);
@@ -167,14 +194,6 @@ public class StaffHomeActivity extends AppCompatActivity implements ITimeSlotLoa
     private void loadAvailableTimeSlotOfBarber(String barberId, String bookDate) {
         //copy from Barber Booking App
         alertDialog.show();
-
-        barberDoc = FirebaseFirestore.getInstance()
-                .collection("AllSalon")
-                .document(Common.state_name)
-                .collection("Branch")
-                .document(Common.selected_salon.getSalonId())
-                .collection("Barbers")
-                .document(barberId);
 
         //Get information of this barber
         barberDoc.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
@@ -227,6 +246,56 @@ public class StaffHomeActivity extends AppCompatActivity implements ITimeSlotLoa
 
     private void init() {
         iTimeSlotLoadListener = this;
+        iNotificationCountListener = this;
+        initNotificationRealtimeUpdate();
+        initBookingRealtimeUpdate();
+    }
+
+    private void initBookingRealtimeUpdate() {
+        barberDoc = FirebaseFirestore.getInstance()
+                .collection("AllSalon")
+                .document(Common.state_name)
+                .collection("Branch")
+                .document(Common.selected_salon.getSalonId())
+                .collection("Barbers")
+                .document(Common.currentBarber.getBarberId());
+
+        //Get current date
+        Calendar date = Calendar.getInstance();
+        date.add(Calendar.DATE,0);
+        bookingEvent = new EventListener<QuerySnapshot>() {
+            @Override
+            public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
+                //If have any new booking, update adapter
+                loadAvailableTimeSlotOfBarber(Common.currentBarber.getBarberId(),
+                        simpleDateFormat.format(date.getTime()));
+            }
+        };
+
+        currentBookDateCollection = barberDoc.collection(simpleDateFormat.format(date.getTime()));
+        bookingRealtimeListenr = currentBookDateCollection.addSnapshotListener(bookingEvent);
+    }
+
+    private void initNotificationRealtimeUpdate() {
+        notificationCollection = FirebaseFirestore.getInstance()
+                .collection("AllSalon")
+                .document(Common.state_name)
+                .collection("Branch")
+                .document(Common.selected_salon.getSalonId())
+                .collection("Barbers")
+                .document(Common.currentBarber.getBarberId())
+                .collection("Notification");
+
+        notificationEvent = new EventListener<QuerySnapshot>() {
+            @Override
+            public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
+                if (queryDocumentSnapshots.size() > 0)
+                    loadNotification();
+            }
+        };
+
+        notificationListener = notificationCollection.whereEqualTo("read", false) //Only listen and count all notification unread
+                .addSnapshotListener(notificationEvent);
     }
 
     @Override
@@ -274,5 +343,79 @@ public class StaffHomeActivity extends AppCompatActivity implements ITimeSlotLoa
         MyTimeSlotAdapter adapter = new MyTimeSlotAdapter(this);
         recycler_time_slot.setAdapter(adapter);
         alertDialog.dismiss();
+    }
+
+
+
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.staff_home_menu, menu);
+      final MenuItem menuItem = menu.findItem(R.id.action_new_notification);
+
+        txt_notification_badge = menuItem.getActionView().findViewById(R.id.notification_badges);
+
+
+        loadNotification();
+        menuItem.getActionView().setOnClickListener(view -> onOptionsItemSelected(menuItem));
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    private void loadNotification() {
+        notificationCollection.whereEqualTo("read",false)
+                .get()
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Toast.makeText(StaffHomeActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                }).addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+            @Override
+            public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                if (task.isSuccessful())
+                {
+                    iNotificationCountListener.onNotificationCountSuccess(task.getResult().size());
+                }
+            }
+        });
+    }
+
+    @Override
+    public void onNotificationCountSuccess(int count) {
+        if (count == 0)
+            txt_notification_badge.setVisibility(View.INVISIBLE);
+        else
+        {
+            txt_notification_badge.setVisibility(View.VISIBLE);
+            if (count <= 9)
+                txt_notification_badge.setText(String.valueOf(count));
+            else
+                txt_notification_badge.setText("9+");
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        initBookingRealtimeUpdate();
+        initNotificationRealtimeUpdate();
+    }
+
+    @Override
+    protected void onStop() {
+        if (notificationListener != null)
+            notificationListener.remove();
+        if (bookingRealtimeListenr != null)
+            bookingRealtimeListenr.remove();
+        super.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (notificationListener != null)
+            notificationListener.remove();
+        if (bookingRealtimeListenr != null)
+            bookingRealtimeListenr.remove();
+        super.onDestroy();
     }
 }
