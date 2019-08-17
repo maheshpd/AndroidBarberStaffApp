@@ -90,6 +90,7 @@ public class StaffHomeActivity extends AppCompatActivity implements ITimeSlotLoa
     ListenerRegistration bookingRealtimeListenr;
 
     INotificationCountListener iNotificationCountListener;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -120,7 +121,7 @@ public class StaffHomeActivity extends AppCompatActivity implements ITimeSlotLoa
 
         View headerView = navigationView.getHeaderView(0);
         txt_barber_name = headerView.findViewById(R.id.txt_barber_name);
-        txt_barber_name.setText(Common.currentBarber.getName()) ;
+        txt_barber_name.setText(Common.currentBarber.getName());
 
         //copy from Barber Booking App (Client App)
         alertDialog = new SpotsDialog.Builder().setCancelable(false).setContext(this)
@@ -262,7 +263,7 @@ public class StaffHomeActivity extends AppCompatActivity implements ITimeSlotLoa
 
         //Get current date
         Calendar date = Calendar.getInstance();
-        date.add(Calendar.DATE,0);
+        date.add(Calendar.DATE, 0);
         bookingEvent = new EventListener<QuerySnapshot>() {
             @Override
             public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
@@ -302,6 +303,13 @@ public class StaffHomeActivity extends AppCompatActivity implements ITimeSlotLoa
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (actionBarDrawerToggle.onOptionsItemSelected(item))
             return true;
+
+        if (item.getItemId() == R.id.action_new_notification) {
+            startActivity(new Intent(StaffHomeActivity.this, NotificationActivity.class));
+            txt_notification_badge.setText("");
+            return true;
+        }
+
         return super.onOptionsItemSelected(item);
     }
 
@@ -346,12 +354,10 @@ public class StaffHomeActivity extends AppCompatActivity implements ITimeSlotLoa
     }
 
 
-
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.staff_home_menu, menu);
-      final MenuItem menuItem = menu.findItem(R.id.action_new_notification);
+        final MenuItem menuItem = menu.findItem(R.id.action_new_notification);
 
         txt_notification_badge = menuItem.getActionView().findViewById(R.id.notification_badges);
 
@@ -362,7 +368,7 @@ public class StaffHomeActivity extends AppCompatActivity implements ITimeSlotLoa
     }
 
     private void loadNotification() {
-        notificationCollection.whereEqualTo("read",false)
+        notificationCollection.whereEqualTo("read", false)
                 .get()
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
@@ -372,8 +378,7 @@ public class StaffHomeActivity extends AppCompatActivity implements ITimeSlotLoa
                 }).addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
             @Override
             public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                if (task.isSuccessful())
-                {
+                if (task.isSuccessful()) {
                     iNotificationCountListener.onNotificationCountSuccess(task.getResult().size());
                 }
             }
@@ -384,8 +389,7 @@ public class StaffHomeActivity extends AppCompatActivity implements ITimeSlotLoa
     public void onNotificationCountSuccess(int count) {
         if (count == 0)
             txt_notification_badge.setVisibility(View.INVISIBLE);
-        else
-        {
+        else {
             txt_notification_badge.setVisibility(View.VISIBLE);
             if (count <= 9)
                 txt_notification_badge.setText(String.valueOf(count));
