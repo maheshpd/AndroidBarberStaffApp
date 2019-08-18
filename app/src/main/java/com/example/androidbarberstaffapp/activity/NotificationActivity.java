@@ -84,7 +84,7 @@ public class NotificationActivity extends AppCompatActivity implements INotifica
                 .document(Common.state_name)
                 .collection("Branch")
                 .document(Common.selected_salon.getSalonId())
-                .collection("Barber")
+                .collection("Barbers")
                 .document(Common.currentBarber.getBarberId())
                 .collection("Notification");
         if (lastDoc == null)
@@ -183,6 +183,8 @@ public class NotificationActivity extends AppCompatActivity implements INotifica
                 if (!myNotificationList.equals(firstList))
                     adapter.updateList(myNotificationList);
             }
+
+            recycler_notification.setAdapter(adapter);
         }
     }
 

@@ -147,11 +147,11 @@ public class Common {
                 MyToken myToken = new MyToken();
                 myToken.setToken(token);
                 myToken.setToken_type(TOKEN_TYPE.BARBER); //Because this vode run from Barber Staff app
-                myToken.setUser(user);
+                myToken.setUserPhone(user);
 
                 //Submit on Firestore
                 FirebaseFirestore.getInstance()
-                        .collection("Token")
+                        .collection("Tokens")
                         .document(user)
                         .set(myToken)
                         .addOnCompleteListener(new OnCompleteListener<Void>() {
