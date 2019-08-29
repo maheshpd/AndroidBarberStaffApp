@@ -15,14 +15,13 @@ import androidx.core.app.NotificationCompat;
 
 import com.example.androidbarberstaffapp.R;
 import com.example.androidbarberstaffapp.model.Barber;
+import com.example.androidbarberstaffapp.model.BookingInformation;
 import com.example.androidbarberstaffapp.model.MyToken;
 import com.example.androidbarberstaffapp.model.Salon;
-import com.example.androidbarberstaffapp.service.MyFCMService;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.FirebaseFirestore;
 
-import java.io.Console;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
@@ -43,6 +42,7 @@ public class Common {
     public static Barber currentBarber;
     public static SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd_MM_yyyy");
     public static Calendar bookingDate = Calendar.getInstance() ;
+    public static BookingInformation currentBookingInformation;
 
 
     public static String convertTimeSlotToString(int slot) {

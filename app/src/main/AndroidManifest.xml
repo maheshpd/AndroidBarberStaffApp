@@ -9,15 +9,11 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".activity.NotificationActivity"></activity>
-
-        <service android:name=".service.MyFCMService">
-            <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-            </intent-filter>
-        </service>
+        <activity android:name=".activity.DoneServicesActivity"></activity>
+        <activity android:name=".activity.NotificationActivity" />
 
         <activity android:name=".activity.StaffHomeActivity" />
+
         <activity android:name=".activity.SalonListActivity" />
         <activity android:name=".activity.MainActivity">
             <intent-filter>
@@ -26,6 +22,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service android:name=".service.MyFCMService">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>
