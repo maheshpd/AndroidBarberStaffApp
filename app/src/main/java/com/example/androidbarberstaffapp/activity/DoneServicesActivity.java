@@ -33,6 +33,7 @@ import com.example.androidbarberstaffapp.Interface.IBarberServicesLoadListener;
 import com.example.androidbarberstaffapp.Interface.IOnShoppingItemSelected;
 import com.example.androidbarberstaffapp.R;
 import com.example.androidbarberstaffapp.fragment.ShoppingFragment;
+import com.example.androidbarberstaffapp.fragment.TotalPriceFragment;
 import com.example.androidbarberstaffapp.model.BarberServices;
 import com.example.androidbarberstaffapp.model.ShoppingItem;
 import com.google.android.gms.tasks.Continuation;
@@ -47,6 +48,7 @@ import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
+import com.google.gson.Gson;
 
 import java.io.File;
 import java.io.IOException;
@@ -178,8 +180,17 @@ public class DoneServicesActivity extends AppCompatActivity implements IBarberSe
                                 .substring(0,
                                         task.getResult().toString().indexOf("&token"));
 
-                        Log.d("DONWLOAFABLE LINK: ", url);
                         dialog.dismiss();
+
+                        TotalPriceFragment fragment = TotalPriceFragment.getInstance();
+                        Bundle bundle = new Bundle();
+                        bundle.putString(Common.SERVICES_ADDED, new Gson().toJson(servicesAdded));
+                        bundle.putString(Common.SHOPPING_LIST, new Gson().toJson(shoppingItems));
+                        fragment.setArguments(bundle);
+                        fragment.show(getSupportFragmentManager(), "Price");
+
+
+
                     }
                 }
             }).addOnFailureListener(new OnFailureListener() {
