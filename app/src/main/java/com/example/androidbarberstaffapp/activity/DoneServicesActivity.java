@@ -2,6 +2,7 @@ package com.example.androidbarberstaffapp.activity;
 
 import android.app.AlertDialog;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.AdapterView;
@@ -18,8 +19,11 @@ import androidx.appcompat.widget.AppCompatAutoCompleteTextView;
 
 import com.example.androidbarberstaffapp.Common.Common;
 import com.example.androidbarberstaffapp.Interface.IBarberServicesLoadListener;
+import com.example.androidbarberstaffapp.Interface.IOnShoppingItemSelected;
 import com.example.androidbarberstaffapp.R;
+import com.example.androidbarberstaffapp.fragment.ShoppingFragment;
 import com.example.androidbarberstaffapp.model.BarberServices;
+import com.example.androidbarberstaffapp.model.ShoppingItem;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.Task;
@@ -39,7 +43,7 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import dmax.dialog.SpotsDialog;
 
-public class DoneServicesActivity extends AppCompatActivity implements IBarberServicesLoadListener {
+public class DoneServicesActivity extends AppCompatActivity implements IBarberServicesLoadListener, IOnShoppingItemSelected {
 
     @BindView(R.id.txt_customer_name)
     TextView txt_customer_name;
@@ -70,6 +74,7 @@ public class DoneServicesActivity extends AppCompatActivity implements IBarberSe
     IBarberServicesLoadListener iBarberServicesLoadListener;
 
     HashSet<BarberServices> servicesAdded = new HashSet<>();
+    List<ShoppingItem> shoppingItems = new ArrayList<>();
 
     LayoutInflater inflater;
 
@@ -82,9 +87,22 @@ public class DoneServicesActivity extends AppCompatActivity implements IBarberSe
 
         init();
 
+        initView();
+
         setCustomerInformation();
 
         loadBarberServices();
+    }
+
+    private void initView() {
+        getSupportActionBar().setTitle("Checkout");
+        btn_shopping.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ShoppingFragment shoppingFragment = ShoppingFragment.getInstance(DoneServicesActivity.this);
+                shoppingFragment.show(getSupportFragmentManager(), "Shopping");
+            }
+        });
     }
 
     private void init() {
@@ -184,5 +202,27 @@ public class DoneServicesActivity extends AppCompatActivity implements IBarberSe
     public void onBarberServicesLoadFailed(String message) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
         dialog.dismiss();
+    }
+
+    @Override
+    public void onShoppingItemSelected(ShoppingItem shoppingItem) {
+        //Here we will create an List to hold Shopping item
+        shoppingItems.add(shoppingItem);
+        Log.d("ShoppingItem ", "" + shoppingItems.size());
+
+        Chip item = (Chip) inflater.inflate(R.layout.chip_item, null);
+        item.setText(shoppingItem.getName());
+        item.setTag(shoppingItems.indexOf(shoppingItem));
+        edt_services.setText("");
+
+        item.setOnCloseIconClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                chip_group_shopping.removeView(view);
+                servicesAdded.remove(item.getTag());
+            }
+        });
+
+        chip_group_shopping.addView(item);
     }
 }
