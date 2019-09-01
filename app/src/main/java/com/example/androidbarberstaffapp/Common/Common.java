@@ -4,13 +4,18 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Build;
+import android.provider.OpenableColumns;
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 
 import com.example.androidbarberstaffapp.R;
@@ -30,24 +35,23 @@ import io.paperdb.Paper;
 public class Common {
     public static final Object DISABLE_TAG = "DISABLE";
     public static final int TIME_SLOT_TOTAL = 20;
-    public static final String LOGGED_KEY =  "LOGGED";
+    public static final String LOGGED_KEY = "LOGGED";
     public static final String STATE_KEY = "STATE";
     public static final String SALON_KEY = "SALON";
     public static final String BARBER_KEY = "BARBER";
     public static final String TITLE_KEY = "title";
     public static final String CONTENT_KEY = "content";
     public static final int MAX_NOTIFICATION_PER_LOAD = 10;
-    public static String state_name="";
+    public static String state_name = "";
     public static Salon selected_salon;
     public static Barber currentBarber;
     public static SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd_MM_yyyy");
-    public static Calendar bookingDate = Calendar.getInstance() ;
+    public static Calendar bookingDate = Calendar.getInstance();
     public static BookingInformation currentBookingInformation;
 
 
     public static String convertTimeSlotToString(int slot) {
-        switch (slot)
-        {
+        switch (slot) {
             case 0:
                 return "9:0-9:30";
             case 1:
@@ -101,10 +105,9 @@ public class Common {
                     intent,
                     PendingIntent.FLAG_UPDATE_CURRENT);
         String NOTIFICATION_CHANNEL_ID = "edmt_barber_booking_channel_01";
-        NotificationManager notificationManager = (NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE);
+        NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-        {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel notificationChannel = new NotificationChannel(NOTIFICATION_CHANNEL_ID,
                     "EDMTV Barber Booking Staff App", NotificationManager.IMPORTANCE_DEFAULT);
             notificationChannel.setDescription("Staff app");
@@ -113,21 +116,43 @@ public class Common {
             notificationManager.createNotificationChannel(notificationChannel);
         }
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(context,NOTIFICATION_CHANNEL_ID);
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID);
         builder.setContentTitle(title)
                 .setContentText(content)
                 .setAutoCancel(false)
                 .setSmallIcon(R.mipmap.ic_launcher)
-                .setLargeIcon(BitmapFactory.decodeResource(context.getResources(),R.mipmap.ic_launcher));
+                .setLargeIcon(BitmapFactory.decodeResource(context.getResources(), R.mipmap.ic_launcher));
 
         if (pendingIntent != null)
             builder.setContentIntent(pendingIntent);
         Notification notification = builder.build();
-        notificationManager.notify(notification_id,notification);
+        notificationManager.notify(notification_id, notification);
     }
 
     public static String formatShoppingItemName(String name) {
         return name.length() > 13 ? new StringBuilder(name.substring(0, 10)).append("...").toString() : name;
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    public static String getFileName(ContentResolver contentResolver, Uri fileUri) {
+        String result = null;
+        if (fileUri.getScheme().equals("content")) {
+            Cursor cursor = contentResolver.query(fileUri, null, null, null);
+            try {
+                if (cursor != null && cursor.moveToFirst())
+                    result = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
+            } finally {
+                cursor.close();
+            }
+        }
+
+        if (result == null) {
+            result = fileUri.getPath();
+            int cut = result.lastIndexOf('/');
+            if (cut != -1)
+                result = result.substring(cut + 1);
+        }
+        return result;
     }
 
     public enum TOKEN_TYPE {
@@ -137,17 +162,14 @@ public class Common {
     }
 
 
-
     public static void updateToken(Context context, String token) {
         //First, we need check if user still login
         //Because, we need store token belonging user
         //So, we need user store data
-        Paper.init(context );
+        Paper.init(context);
         String user = Paper.book().read(Common.LOGGED_KEY);
-        if (user != null)
-        {
-            if (!TextUtils.isEmpty(user))
-            {
+        if (user != null) {
+            if (!TextUtils.isEmpty(user)) {
                 MyToken myToken = new MyToken();
                 myToken.setToken(token);
                 myToken.setToken_type(TOKEN_TYPE.BARBER); //Because this vode run from Barber Staff app
