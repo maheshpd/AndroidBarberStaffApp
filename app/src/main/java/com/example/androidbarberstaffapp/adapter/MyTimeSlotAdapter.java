@@ -76,59 +76,84 @@ public class MyTimeSlotAdapter extends RecyclerView.Adapter<MyTimeSlotAdapter.My
                 int slot = Integer.parseInt(slotValue.getSlot().toString());
                 if (slot == position) //If slot == position
                 {
-                    //We will set tag for all time slot is full
-                    //So base on tag, we set all remain card background without change full time slot
-                    holder.card_time_slot.setTag(Common.DISABLE_TAG);
-                    holder.card_time_slot.setCardBackgroundColor(context.getResources().getColor(android.R.color.holo_blue_bright));
-                    holder.txt_time_slot_description.setText("Full");
-                    holder.txt_time_slot_description.setTextColor(context.getResources().getColor(android.R.color.white));
-                    holder.txt_time_slot.setTextColor(context.getResources().getColor(android.R.color.white));
+
+                    if (!slotValue.isDone()) {
+
+                        //We will set tag for all time slot is full
+                        //So base on tag, we set all remain card background without change full time slot
+                        holder.card_time_slot.setTag(Common.DISABLE_TAG);
+                        holder.card_time_slot.setCardBackgroundColor(context.getResources().getColor(android.R.color.holo_blue_bright));
+                        holder.txt_time_slot_description.setText("Full");
+                        holder.txt_time_slot_description.setTextColor(context.getResources().getColor(android.R.color.white));
+                        holder.txt_time_slot.setTextColor(context.getResources().getColor(android.R.color.white));
 
 //                    holder.card_time_slot.setEnabled(true);
 
-                    holder.setiRecycleItemSelectedListener(new IRecycleItemSelectedListener() {
-                        @Override
-                        public void onItemSelected(View view, int position) {
-                            // Only add for gray time slot
-                            //Here we will get Booking Information and store in Common.currentBookingInformation
-                            //After that, start DoneServicesActivity
+                        holder.setiRecycleItemSelectedListener(new IRecycleItemSelectedListener() {
+                            @Override
+                            public void onItemSelected(View view, int position) {
+                                // Only add for gray time slot
+                                //Here we will get Booking Information and store in Common.currentBookingInformation
+                                //After that, start DoneServicesActivity
 
-                            FirebaseFirestore.getInstance()
-                                    .collection("AllSalon")
-                                    .document(Common.state_name)
-                                    .collection("Branch")
-                                    .document(Common.selected_salon.getSalonId())
-                                    .collection("Barbers")
-                                    .document(Common.currentBarber.getBarberId())
-                                    .collection(Common.simpleDateFormat.format(Common.bookingDate.getTime()))
-                                    .document(slotValue.getSlot().toString())
-                                    .get()
-                                    .addOnFailureListener(new OnFailureListener() {
-                                        @Override
-                                        public void onFailure(@NonNull Exception e) {
-                                            Toast.makeText(context, e.getMessage(), Toast.LENGTH_SHORT).show();
-                                        }
-                                    }).addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
-                                @Override
-                                public void onComplete(@NonNull Task<DocumentSnapshot> task) {
-                                    if (task.isSuccessful()) {
-                                        if (task.getResult().exists()) {
-                                            Common.currentBookingInformation = task.getResult().toObject(BookingInformation.class);
-                                            context.startActivity(new Intent(context, DoneServicesActivity.class));
+                                FirebaseFirestore.getInstance()
+                                        .collection("AllSalon")
+                                        .document(Common.state_name)
+                                        .collection("Branch")
+                                        .document(Common.selected_salon.getSalonId())
+                                        .collection("Barbers")
+                                        .document(Common.currentBarber.getBarberId())
+                                        .collection(Common.simpleDateFormat.format(Common.bookingDate.getTime()))
+                                        .document(slotValue.getSlot().toString())
+                                        .get()
+                                        .addOnFailureListener(new OnFailureListener() {
+                                            @Override
+                                            public void onFailure(@NonNull Exception e) {
+                                                Toast.makeText(context, e.getMessage(), Toast.LENGTH_SHORT).show();
+                                            }
+                                        }).addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+                                    @Override
+                                    public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                                        if (task.isSuccessful()) {
+                                            if (task.getResult().exists()) {
+                                                Common.currentBookingInformation = task.getResult().toObject(BookingInformation.class);
+                                                Common.currentBookingInformation.setBookingId(task.getResult().getId());
+                                                context.startActivity(new Intent(context, DoneServicesActivity.class));
+                                            }
                                         }
                                     }
-                                }
-                            });
+                                });
 
-                        }
-                    });
+                            }
+                        });
+                    } else {
+                        //If service is done
+                        holder.card_time_slot.setTag(Common.DISABLE_TAG);
+                        holder.card_time_slot.setCardBackgroundColor(context.getResources().getColor(android.R.color.holo_orange_dark));
+                        holder.txt_time_slot_description.setText("Done");
+                        holder.txt_time_slot_description.setTextColor(context.getResources().getColor(android.R.color.white));
+                        holder.txt_time_slot.setTextColor(context.getResources().getColor(android.R.color.white));
+
+                        holder.setiRecycleItemSelectedListener(new IRecycleItemSelectedListener() {
+                            @Override
+                            public void onItemSelected(View view, int position) {
+                                //Add here to fix crash
+                            }
+                        });
+                    }
                 } else {
-                    holder.setiRecycleItemSelectedListener(new IRecycleItemSelectedListener() {
-                        @Override
-                        public void onItemSelected(View view, int position) {
+                    //Fix crash
+                    if (holder.getiRecycleItemSelectedListener() == null) {
+                        //We only add event for view holder which is not implement click
+                        //Because if we don't put this if condition
+                        //All time slot with slot value higher current time slot will be override event
+                        holder.setiRecycleItemSelectedListener(new IRecycleItemSelectedListener() {
+                            @Override
+                            public void onItemSelected(View view, int position) {
 
-                        }
-                    });
+                            }
+                        });
+                    }
                 }
             }
         }
@@ -168,6 +193,10 @@ public class MyTimeSlotAdapter extends RecyclerView.Adapter<MyTimeSlotAdapter.My
         CardView card_time_slot;
 
         IRecycleItemSelectedListener iRecycleItemSelectedListener;
+
+        public IRecycleItemSelectedListener getiRecycleItemSelectedListener() {
+            return iRecycleItemSelectedListener;
+        }
 
         public void setiRecycleItemSelectedListener(IRecycleItemSelectedListener iRecycleItemSelectedListener) {
             this.iRecycleItemSelectedListener = iRecycleItemSelectedListener;

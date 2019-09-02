@@ -46,6 +46,7 @@ public class Common {
     public static final double DEFAULT_PRICE = 30;
     public static final String MONEY_SIGN = "$";
     public static final String SHOPPING_LIST = "SHOPPIPNG_LIST_ITEMS";
+    public static final String IMAGE_DOWNLOADABLE_URL = "DOWNLOADABLE_URL";
     public static String state_name = "";
     public static Salon selected_salon;
     public static Barber currentBarber;
